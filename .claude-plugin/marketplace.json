@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "task-shredder",
-      "path": "plugins/task-shredder",
+      "source": "./plugins/task-shredder",
       "description": "Shred complex tasks into parallel agent workflows with research, planning, and verification",
       "version": "0.1.0"
     }
