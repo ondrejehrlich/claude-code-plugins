@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-code-plugins",
+  "description": "Ondrej's Plugin Bazaar -- where Claude Code gets superpowers, questionable habits, and an unreasonable number of workflow opinions. Enter at your own productivity risk.",
+  "owner": {
+    "name": "Ondrej Ehrlich"
+  },
+  "plugins": [
+    {
+      "name": "task-shredder",
+      "path": "plugins/task-shredder",
+      "description": "Shred complex tasks into parallel agent workflows with research, planning, and verification",
+      "version": "0.1.0"
+    }
+  ]
+}

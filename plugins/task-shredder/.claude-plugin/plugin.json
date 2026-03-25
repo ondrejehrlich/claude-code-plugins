@@ -1,0 +1,9 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "task-shredder",
+  "version": "0.1.0",
+  "description": "Shred complex tasks into parallel agent workflows with research, planning, and verification",
+  "author": {
+    "name": "Ondrej Ehrlich"
+  }
+}
