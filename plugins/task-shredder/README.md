@@ -7,9 +7,9 @@ Task Shredder is a Claude Code command that acts as an **orchestrator** — it n
 ## Usage
 
 ```
-/task-shredder <task description>   # Start a new task
-/task-shredder                      # List existing tasks or start new
-/task-shredder resume               # Resume an interrupted task
+/task-shredder:shred <task description>   # Start a new task
+/task-shredder:shred                      # List existing tasks or start new
+/task-shredder:shred resume               # Resume an interrupted task
 ```
 
 ## Recommended: Auto mode
