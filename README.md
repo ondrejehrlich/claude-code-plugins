@@ -37,7 +37,7 @@ Or use [Auto Mode](https://claude.com/blog/auto-mode) for a safer alternative th
 Shred complex tasks into parallel agent workflows with research, planning, and verification.
 
 ```
-/task-shredder add refund support for cancelled subscriptions
+/task-shredder:shred add refund support for cancelled subscriptions
 ```
 
 A 7-step orchestration pipeline that turns a high-level task description into fully implemented, reviewed, and verified code — without the orchestrator ever writing a line itself.

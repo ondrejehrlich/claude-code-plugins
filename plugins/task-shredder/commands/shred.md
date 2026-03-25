@@ -8,9 +8,9 @@ Break complex development tasks into isolated phases, each handled by a dedicate
 
 ## Usage
 
-- `/task-shredder <task description>` — Start a new task or resume an existing one
-- `/task-shredder` — List existing tasks or start a new one
-- `/task-shredder resume` — List tasks and pick one to resume
+- `/task-shredder:shred <task description>` — Start a new task or resume an existing one
+- `/task-shredder:shred` — List existing tasks or start a new one
+- `/task-shredder:shred resume` — List tasks and pick one to resume
 
 ---
 
@@ -299,14 +299,14 @@ TASK DIR: {task_dir}
 1. Read {task_dir}/research.md thoroughly
 2. Analyze the task assignment against the research findings
 3. Identify the TOP 3 most impactful areas that need clarification:
-   - Ambiguous requirements
-   - Multiple valid implementation approaches
-   - Edge cases that need business decisions
-   - Scope boundaries (what's included vs not)
-   - Performance considerations
-   - Migration/data concerns
-   - UI/UX decisions
-   - Testing strategy choices
+    - Ambiguous requirements
+    - Multiple valid implementation approaches
+    - Edge cases that need business decisions
+    - Scope boundaries (what's included vs not)
+    - Performance considerations
+    - Migration/data concerns
+    - UI/UX decisions
+    - Testing strategy choices
 4. Write exactly 3 questions to {task_dir}/questions-batch-1.md
 5. Return ONLY a one-line confirmation like: "Generated 3 questions. Written to questions-batch-1.md."
 
@@ -337,10 +337,10 @@ Why this matters: {Brief explanation of impact on implementation}
 3. Once the agent confirms, read ONLY `{task_dir}/questions-batch-1.md` (NOT research.md). Parse it into individual questions.
 
 4. **Present questions ONE AT A TIME** using `AskUserQuestion` tool. For EACH question:
-   1. Use `AskUserQuestion` with the question text AND the selectable options
-   2. STOP and WAIT for the user's response
-   3. Record their answer in `task.json` > `steps.questions.qa_log` immediately
-   4. Only THEN proceed to the next question
+    1. Use `AskUserQuestion` with the question text AND the selectable options
+    2. STOP and WAIT for the user's response
+    3. Record their answer in `task.json` > `steps.questions.qa_log` immediately
+    4. Only THEN proceed to the next question
 
    **Question format for each AskUserQuestion call:**
    ```
@@ -661,8 +661,8 @@ TASK DIR: {task_dir}
 1. Read {task_dir}/plan.md thoroughly
 2. Split the plan into 3-5 isolated phases following the dependency order below
 3. Write TWO files:
-   - {task_dir}/phases.md — detailed phase breakdown (for implementation agents)
-   - {task_dir}/phases-summary.json — compact summary (for the orchestrator)
+    - {task_dir}/phases.md — detailed phase breakdown (for implementation agents)
+    - {task_dir}/phases-summary.json — compact summary (for the orchestrator)
 4. Return ONLY a brief summary: phase count, dependency graph, any splitting decisions made.
 
 ## Phase Ordering Heuristic
@@ -933,16 +933,16 @@ Report back:
 6. **When each implementation agent completes**, send its phase to the persistent `code-reviewer` via `SendMessage`:
 
    ```
-   SendMessage(to: "code-reviewer", message: "
-   ## Review Request: Phase {N} — {title}
+SendMessage(to: "code-reviewer", message: "
+## Review Request: Phase {N} — {title}
 
-   **Allowed files for this phase:**
-   {file_list}
+**Allowed files for this phase:**
+{file_list}
 
-   Check the recent git log for task({slug}) commits from this phase.
-   Verify file ownership, code conventions, and commit format.
-   Respond APPROVE or REJECT.
-   ")
+Check the recent git log for task({slug}) commits from this phase.
+Verify file ownership, code conventions, and commit format.
+Respond APPROVE or REJECT.
+")
    ```
 
 7. **Based on code-reviewer's verdict**:
@@ -963,10 +963,10 @@ Report back:
    ```bash
    php artisan test --compact --filter={comma-separated list of new test files from this wave}
    ```
-   This runs on the main working directory where vendor, .env, database, and all dependencies are available.
+This runs on the main working directory where vendor, .env, database, and all dependencies are available.
 
-   - If tests pass: Display results and continue to next wave.
-   - If tests fail: Identify which phase's tests failed based on file paths. Spawn a fix agent for that phase (with the test failure output in its prompt) to debug and fix. Re-run tests after fix. Maximum 2 fix attempts — after that, alert the user.
+- If tests pass: Display results and continue to next wave.
+- If tests fail: Identify which phase's tests failed based on file paths. Spawn a fix agent for that phase (with the test failure output in its prompt) to debug and fix. Re-run tests after fix. Maximum 2 fix attempts — after that, alert the user.
 
 9. **After each wave completes — check for issues**:
    Check if `{task_dir}/issues.md` exists and has new content. If BLOCKER issues are found, set `task.json` > `steps.implementation.issues_detected = true`:
@@ -1131,10 +1131,10 @@ Read these files in your own context:
 4. **Business Logic Correctness**: Does the code actually do what the plan says?
 5. **Data Integrity**: Are database constraints correct? Foreign keys? Indexes?
 6. **Edge Cases**:
-   - Null values where unexpected
-   - Empty collections
-   - Concurrent access scenarios
-   - Invalid state transitions
+    - Null values where unexpected
+    - Empty collections
+    - Concurrent access scenarios
+    - Invalid state transitions
 7. **Integration Points**: Do new features work with existing code? Check controller > action > model flow.
 8. **Regression Risk**: Could these changes break existing functionality?
 9. **Migration Safety**: Can migrations run without data loss? Reversible?
@@ -1389,18 +1389,18 @@ When resuming an existing task:
    After user picks a checkpoint, run `git reset --hard {tag}` (with user confirmation), update task.json to mark later phases as pending, and resume from that wave.
 
 7. **If step state is `completed`**:
-   - Advance to the next step with state `pending`.
+    - Advance to the next step with state `pending`.
 
 8. **If step state is `failed`**:
-   - Show the error. Offer to retry or abandon.
+    - Show the error. Offer to retry or abandon.
 
 9. **If step state is `pending`**:
-   - Start this step normally.
+    - Start this step normally.
 
 10. For implementation phase resume:
-   - Check which phases are completed vs pending
-   - Only re-spawn agents for incomplete phases
-   - Completed phase commits are preserved
+- Check which phases are completed vs pending
+- Only re-spawn agents for incomplete phases
+- Completed phase commits are preserved
 
 11. **For fixes phase resume**: The original `impl-phase-{N}` agents are no longer alive after a context reset. Re-spawn them using the same prompt from Step 6 (reading research.md, plan.md, phases.md), then send fix requests via `SendMessage`.
 
