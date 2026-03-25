@@ -12,6 +12,18 @@ Task Shredder is a Claude Code command that acts as an **orchestrator** — it n
 /task-shredder resume               # Resume an interrupted task
 ```
 
+## Recommended: Auto mode
+
+Task Shredder spawns many sub-agents across all 7 steps. To avoid constant permission prompts, run Claude Code with auto-approve permissions:
+
+```bash
+claude --dangerously-skip-permissions
+```
+
+Or use [Auto Mode](https://claude.com/blog/auto-mode) for a safer alternative that still lets agents work uninterrupted while keeping guardrails in place.
+
+> **Use at your own risk.** This grants Claude broad access to your filesystem and shell. Always work in a version-controlled repository so you can roll back via the git checkpoint tags if needed.
+
 ## How It Works
 
 Every task goes through a 7-step pipeline. The orchestrator manages the lifecycle, tracks state in `task.json`, and keeps your context window clean by delegating all heavy lifting to sub-agents.

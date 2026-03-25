@@ -16,6 +16,18 @@ claude plugin add github:ondrejehrlich/claude-code-plugins
 claude plugin add github:ondrejehrlich/claude-code-plugins/plugins/task-shredder
 ```
 
+### Recommended: Auto mode
+
+These plugins spawn many sub-agents that read files, run commands, and write code. To avoid constant permission prompts, run Claude Code with auto-approve permissions:
+
+```bash
+claude --dangerously-skip-permissions
+```
+
+Or use [Auto Mode](https://claude.com/blog/auto-mode) for a safer alternative that still lets agents work uninterrupted while keeping guardrails in place.
+
+> **Use at your own risk.** These modes grant Claude broad access to your filesystem and shell. Review what each plugin does before enabling auto-approve, and always work in a version-controlled repository so you can roll back if needed.
+
 ## Plugins
 
 ### Task Shredder
