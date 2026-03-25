@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "claude-code-plugins",
+  "name": "ondrej-claude-code-plugins",
   "description": "Ondrej's Plugin Bazaar -- where Claude Code gets superpowers, questionable habits, and an unreasonable number of workflow opinions. Enter at your own productivity risk.",
   "owner": {
     "name": "Ondrej Ehrlich"

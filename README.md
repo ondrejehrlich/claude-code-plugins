@@ -13,7 +13,7 @@ A curated marketplace of Claude Code plugins for workflows, coding standards, an
 ### Install a plugin
 
 ```
-/plugin install task-shredder@claude-code-plugins
+/plugin install task-shredder@ondrej-claude-code-plugins
 ```
 
 Or run `/plugin` to open the interactive plugin manager and browse available plugins.
