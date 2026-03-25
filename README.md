@@ -4,17 +4,19 @@ A curated marketplace of Claude Code plugins for workflows, coding standards, an
 
 ## Usage
 
-### From the marketplace
+### Add the marketplace
 
-```bash
-claude plugin add github:ondrejehrlich/claude-code-plugins
+```
+/plugin marketplace add ondrejehrlich/claude-code-plugins
 ```
 
-### Individual plugin
+### Install a plugin
 
-```bash
-claude plugin add github:ondrejehrlich/claude-code-plugins/plugins/task-shredder
 ```
+/plugin install task-shredder@claude-code-plugins
+```
+
+Or run `/plugin` to open the interactive plugin manager and browse available plugins.
 
 ### Recommended: Auto mode
 
