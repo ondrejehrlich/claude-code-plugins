@@ -190,7 +190,9 @@ Deploying the research squad — parallel scouts incoming...
 
 **Agent prompt** (adapt the task description):
 ```
-You are a research agent for the Task Shredder system. Your job is to deeply explore this codebase and write a comprehensive research document to a file. Do NOT return the research content in your response — write it ALL to the file.
+You are a research agent for the Task Shredder system. Your job is to deeply explore this codebase and produce a comprehensive research document that downstream agents (question generator, planner, plan checker, implementation agents, verification agents) will rely on ENTIRELY. They have no other context about the codebase — if something isn't in your research, it doesn't exist to them.
+
+Do NOT return the research content in your response — write it ALL to the file.
 
 TASK: {full task description}
 TASK DIR: {task_dir}
@@ -198,71 +200,342 @@ TASK DIR: {task_dir}
 ## Your Mission
 
 1. Launch PARALLEL exploration across different codebase areas (see below).
-2. Synthesize all findings into a single comprehensive document.
-3. Write ALL findings to: {task_dir}/research.md using the Write tool.
-4. Return ONLY a brief summary (3-5 lines) of what you found — counts of models, actions, tests, key risks. Do NOT include the research content itself in your response.
+2. After all agents return, do TARGETED FOLLOW-UP reads — open the most critical files and extract actual code (method signatures, relationship definitions, observer handlers, route definitions, test patterns). The Explore agents find what exists; YOU read the details.
+3. Synthesize everything into a single comprehensive document.
+4. Write ALL findings to: {task_dir}/research.md using the Write tool.
+5. Return ONLY a brief summary (3-5 lines) of what you found — counts of models, actions, tests, key risks. Do NOT include the research content itself in your response.
 
 ## MANDATORY: Parallel Exploration Strategy
 
-You MUST spawn parallel Explore sub-agents to cover different areas simultaneously. Do NOT search everything sequentially. Launch these agents IN PARALLEL in a single message:
+You MUST spawn parallel Explore sub-agents to cover different areas simultaneously. Do NOT search everything sequentially. Launch these agents IN PARALLEL in a single message. Tell each agent to be VERY THOROUGH — they should read file contents, not just list file paths.
 
-**Agent 1 — Models & Database** (`subagent_type: "Explore"`, `name: "explore-models"`):
-- All Eloquent models related to the task (app/Models/)
-- Their relationships, casts, traits, scopes, HasTemporalHistory usage
-- Database migrations for related tables (database/migrations/)
-- Enums in app/Enums/ related to the domain
+**Agent 1 — Models & Database** (`subagent_type: "Explore"`, `name: "explore-models"`, thoroughness: "very thorough"):
+- All Eloquent models related to the task (app/Models/) — READ each model file to extract: relationships (hasMany, belongsTo, morphTo, etc. with their exact signatures), $casts, $fillable, $guarded, scopes, accessors/mutators, traits used, HasTemporalHistory usage
+- Database migrations for related tables (database/migrations/) — READ migration files to extract: column definitions with types, indexes, foreign keys, unique constraints, default values
+- Enums in app/Enums/ related to the domain — READ to get all cases and any methods
+- Factory definitions in database/factories/ for related models
 
-**Agent 2 — Observers & Side Effects** (`subagent_type: "Explore"`, `name: "explore-observers"`):
-- ALL model observers in app/Observers/ that fire on related models
-- Jobs triggered by observers (app/Jobs/)
-- Notifications triggered by model events (app/Notifications/)
-- Any event listeners or subscribers
+**Agent 2 — Observers & Side Effects** (`subagent_type: "Explore"`, `name: "explore-observers"`, thoroughness: "very thorough"):
+- ALL model observers in app/Observers/ that fire on related models — READ each observer to get: which events are handled (created, updated, deleted, etc.), what logic runs on each event, what jobs/notifications are dispatched
+- Jobs triggered by observers (app/Jobs/) — READ to get: handle() method logic, queue configuration, constructor parameters
+- Notifications triggered by model events (app/Notifications/) — READ to get: channels, via() method, toMail/toArray content
+- Event listeners and subscribers — READ to get: which events they listen to and what they do
+- Policies in app/Policies/ — READ to get: authorization rules for related models
 
-**Agent 3 — Business Logic & API** (`subagent_type: "Explore"`, `name: "explore-logic"`):
-- Existing Actions in app/Actions/ related to the task
-- Services in app/Services/
-- Queries in app/Queries/, Calculators in app/Calculators/, Builders in app/Builders/
-- Controllers, routes, form requests related to the task
-- Nova resources in app/Nova/
+**Agent 3 — Business Logic & API** (`subagent_type: "Explore"`, `name: "explore-logic"`, thoroughness: "very thorough"):
+- Existing Actions in app/Actions/ related to the task — READ to get: full method signatures (parameters with types and return types), key logic flow, what models they create/update/delete, what events/jobs they dispatch
+- Services in app/Services/ — READ to get: public method signatures and their purpose
+- Queries in app/Queries/, Calculators in app/Calculators/, Builders in app/Builders/ — READ to get: method signatures, what data they return, how they're used
+- Controllers related to the task — READ to get: all action methods with their signatures, which Actions/Queries they call, what data they pass to views, validation rules
+- Routes (routes/web.php, routes/api.php) — READ or grep to get: exact route definitions (method, URI, controller@action, middleware, route names) for related functionality
+- Form Requests in app/Http/Requests/ — READ to get: rules(), authorize() logic
+- Nova resources in app/Nova/ — READ to get: fields, actions, filters, lenses
+- Middleware applied to related routes
+- DTOs in app/DTOs/ or app/Data/ — READ to get: properties, from() methods, validation
 
-**Agent 4 — Frontend & Tests** (`subagent_type: "Explore"`, `name: "explore-frontend"`):
-- Vue/Inertia components in resources/js/Pages/ and resources/js/Components/
-- Existing tests in tests/Feature/ and tests/Unit/ related to this functionality
-- Any TypeScript types or composables
+**Agent 4 — Frontend & Tests** (`subagent_type: "Explore"`, `name: "explore-frontend"`, thoroughness: "very thorough"):
+- Vue/Inertia components in resources/js/Pages/ and resources/js/Components/ — READ to get: props interface/defineProps, emits, key template structure, composables used, form handling patterns
+- Existing tests in tests/Feature/ and tests/Unit/ related to this functionality — READ to get: test method names, what they assert, setup patterns (factories used, database seeding), HTTP test patterns (actingAs, post/get calls, assertRedirect/assertJson)
+- TypeScript types in resources/js/types/ or resources/js/interfaces/
+- Composables in resources/js/composables/ or resources/js/hooks/
+- Test base classes or traits used (TestCase customizations, RefreshDatabase, etc.)
 
-After ALL four agents return, synthesize their findings into research.md.
-Also read the project's CLAUDE.md and check memory files in memory/patterns/ and memory/domain/ for established patterns and constraints — include these in the architecture constraints section.
+## MANDATORY: Post-Exploration Deep Reads
+
+After ALL four Explore agents return their findings, you MUST do targeted deep reads of the most critical files. Use the Read tool directly to extract:
+
+1. **The 3-5 most central model files** — copy their complete relationship methods, scopes, and casts into the research
+2. **All observer files** for related models — copy the complete event handler methods (created, updated, etc.)
+3. **The most relevant existing Action/Query** — copy its full method signature and key logic as a PATTERN EXAMPLE that implementation agents should follow
+4. **The most relevant existing test file** — copy 1-2 test methods as a PATTERN EXAMPLE showing how tests are structured in this project
+5. **Route definitions** — copy the exact route group/definitions for the related domain
+6. **CLAUDE.md and any .cursorrules or similar** — extract project conventions, patterns, and constraints
+7. **Memory files** in memory/patterns/ and memory/domain/ — extract established patterns and domain knowledge
+
+These deep reads are CRITICAL. Without actual code snippets, implementation agents will guess at patterns and get them wrong.
 
 ## Output Format for research.md
 
 ```markdown
 # Research: {task description}
 
-## Summary
-Brief overview of what you found and key risks/considerations.
+## Executive Summary
+2-3 paragraph overview: what exists, what's missing, key risks, and recommended approach.
+List the top 3-5 risks that the planner MUST address.
+
+## Project Conventions & Constraints
+Patterns extracted from CLAUDE.md, memory files, and codebase analysis:
+- Coding standards (strict types, final classes, naming conventions)
+- Architecture patterns (Action pattern, Query pattern, etc.)
+- Testing patterns (what test framework, how factories are used)
+- Frontend patterns (Inertia props, Vue composition API, etc.)
+- Any domain-specific constraints or conventions
 
 ## Related Models
+
 ### {ModelName}
-- File: `app/Models/{ModelName}.php`
-- Key relationships: ...
-- Observers: ...
-- Traits: ...
+- **File**: `app/Models/{ModelName}.php`
+- **Table**: `{table_name}`
+- **Relationships**:
+  ```php
+  public function items(): HasMany { return $this->hasMany(Item::class); }
+  public function owner(): BelongsTo { return $this->belongsTo(User::class, 'owner_id'); }
+  ```
+- **Casts**: `['status' => StatusEnum::class, 'metadata' => 'array']`
+- **Fillable/Guarded**: `['name', 'status', ...]`
+- **Scopes**: `scopeActive($query)`, `scopeForUser($query, User $user)`
+- **Accessors/Mutators**: `getFullNameAttribute()`, etc.
+- **Traits**: `HasTemporalHistory`, `SoftDeletes`, etc.
+- **Observers**: `{ModelName}Observer` — fires on: created, updated
+- **Used by**: List Actions/Controllers/Queries that use this model
 
-## Existing Business Logic
-### Actions
-### Services
-### Queries/Calculators
+### {ModelName2}
+...
 
-## Controllers & Routes
-## Frontend Components
 ## Database Schema
-## Tests Coverage
-## Observers & Side Effects (CRITICAL)
-## Architecture Constraints
-## Risks & Considerations
+
+### Table: {table_name}
+```sql
+-- From migration: database/migrations/YYYY_MM_DD_create_{table}_table.php
+id                  bigint unsigned  PRIMARY KEY
+name                varchar(255)     NOT NULL
+status              varchar(50)      NOT NULL DEFAULT 'draft'
+owner_id            bigint unsigned  FOREIGN KEY -> users.id
+amount_cents        integer          NOT NULL DEFAULT 0
+metadata            json             NULLABLE
+created_at          timestamp        NULLABLE
+updated_at          timestamp        NULLABLE
+deleted_at          timestamp        NULLABLE
+
+INDEXES: idx_status (status), idx_owner (owner_id)
+UNIQUE: unique_name_owner (name, owner_id)
 ```
 
-Be exhaustive. Miss nothing. The implementation agents will rely entirely on YOUR research. Write EVERYTHING to the file, return only a brief status summary.
+### Table: {table_name2}
+...
+
+## Enums
+
+### {EnumName}
+- **File**: `app/Enums/{EnumName}.php`
+- **Cases**: `Draft`, `Active`, `Completed`, `Cancelled`
+- **Methods**: `label()`, `color()`, `isTerminal()`
+- **Used by**: `Model->status` cast
+
+## Existing Business Logic
+
+### Actions
+#### {ActionName}
+- **File**: `app/Actions/{ActionName}.php`
+- **Signature**: `public function execute(CreateDealData $data, User $actor): Deal`
+- **What it does**: Creates a deal, dispatches DealCreatedJob, logs activity
+- **Dispatches**: `DealCreatedJob`, `ActivityLogAction`
+- **Used by**: `DealController@store`, `API\DealController@store`
+
+#### {ActionName2}
+...
+
+### Queries
+#### {QueryName}
+- **File**: `app/Queries/{QueryName}.php`
+- **Signature**: `public function execute(User $user, ?string $search = null): LengthAwarePaginator`
+- **What it does**: Paginated list of deals with eager loading and search
+- **Eager loads**: `['owner', 'items', 'latestActivity']`
+
+### Calculators
+#### {CalculatorName}
+...
+
+### Services
+#### {ServiceName}
+...
+
+## Controllers & Routes
+
+### {ControllerName}
+- **File**: `app/Http/Controllers/{ControllerName}.php`
+- **Methods**:
+  - `index()` → calls `{QueryName}`, returns Inertia view `Deals/Index`
+  - `store(CreateDealRequest $request)` → calls `{ActionName}`, redirects
+  - `update(UpdateDealRequest $request, Deal $deal)` → calls `{ActionName}`, redirects
+- **Route group**:
+  ```php
+  Route::middleware(['auth', 'verified'])->group(function () {
+      Route::resource('deals', DealController::class);
+  });
+  ```
+- **Form Requests**:
+  - `CreateDealRequest`: rules = `['name' => 'required|string|max:255', 'status' => 'required|in:draft,active']`
+  - `UpdateDealRequest`: rules = `[...]`
+
+## Observers & Side Effects (CRITICAL)
+
+### {ModelName}Observer
+- **File**: `app/Observers/{ModelName}Observer.php`
+- **Events handled**:
+  ```php
+  public function created(Deal $deal): void
+  {
+      // Dispatches DealCreatedNotification to owner
+      // Creates initial activity log entry
+      // Syncs to external CRM via SyncDealJob
+  }
+
+  public function updated(Deal $deal): void
+  {
+      // If status changed: dispatches StatusChangedJob
+      // If amount changed: recalculates portfolio totals
+  }
+  ```
+- **IMPACT**: Any code that creates/updates this model will trigger these side effects. Implementation agents MUST account for this.
+
+### Jobs Dispatched by Observers
+#### {JobName}
+- **File**: `app/Jobs/{JobName}.php`
+- **Queue**: `{queue_name}`
+- **What it does**: {description}
+- **Constructor**: `__construct(Deal $deal, ?User $actor = null)`
+
+### Notifications Dispatched
+#### {NotificationName}
+...
+
+## Frontend Components
+
+### Pages
+#### {PageName}
+- **File**: `resources/js/Pages/{PageName}.vue`
+- **Props**:
+  ```typescript
+  defineProps<{
+      deals: Paginated<Deal>;
+      filters: DealFilters;
+      canCreate: boolean;
+  }>();
+  ```
+- **Key behavior**: Renders deal table, handles filtering, links to create/edit
+- **Uses components**: `DataTable`, `StatusBadge`, `DealForm`
+- **Form handling**: Uses `useForm()` from Inertia
+
+### Components
+#### {ComponentName}
+- **File**: `resources/js/Components/{ComponentName}.vue`
+- **Props**: `{ deal: Deal, editable: boolean }`
+- **Emits**: `['updated', 'deleted']`
+
+### TypeScript Types
+```typescript
+interface Deal {
+    id: number;
+    name: string;
+    status: DealStatus;
+    owner: User;
+    amount_cents: number;
+    created_at: string;
+}
+```
+
+## Tests Coverage
+
+### Existing Test Patterns
+**Test base class setup**:
+```php
+// From tests/TestCase.php or relevant base
+uses(RefreshDatabase::class);
+// Factory patterns used: Deal::factory()->create([...])
+```
+
+### Related Tests
+#### {TestFileName}
+- **File**: `tests/Feature/{TestFileName}.php`
+- **Test methods**:
+  - `test_user_can_create_deal()` — POST /deals, asserts redirect + DB has record
+  - `test_unauthorized_user_cannot_create_deal()` — asserts 403
+  - `test_validation_fails_without_name()` — asserts validation errors
+- **Pattern example** (copy 1-2 representative test methods):
+  ```php
+  public function test_user_can_create_deal(): void
+  {
+      $user = User::factory()->create();
+      $data = ['name' => 'Test Deal', 'status' => 'draft'];
+
+      $this->actingAs($user)
+          ->post(route('deals.store'), $data)
+          ->assertRedirect(route('deals.index'));
+
+      $this->assertDatabaseHas('deals', ['name' => 'Test Deal', 'owner_id' => $user->id]);
+  }
+  ```
+
+### Test Coverage Gaps
+List functionality that exists but has NO tests, or areas with thin coverage.
+
+## Pattern Examples (for implementation agents)
+
+### Action Pattern Example
+```php
+// From {most relevant existing action file}
+// Copy the FULL file or key methods so implementation agents can follow the exact pattern
+declare(strict_types=1);
+
+namespace App\Actions;
+
+final class CreateDealAction
+{
+    public function execute(CreateDealData $data, User $actor): Deal
+    {
+        // ... actual implementation pattern
+    }
+}
+```
+
+### Query Pattern Example
+```php
+// From {most relevant existing query file}
+```
+
+### Controller Pattern Example
+```php
+// From {most relevant existing controller file}
+// Show how controllers call Actions/Queries and return Inertia responses
+```
+
+### Test Pattern Example
+```php
+// From {most relevant existing test file}
+// Show the full test class structure, setUp, factory usage
+```
+
+## Dependency Map
+Which models/classes depend on what — helps the planner split phases correctly:
+- `DealController` → depends on `CreateDealAction`, `GetDealsQuery`, `Deal` model
+- `CreateDealAction` → depends on `Deal` model, `DealCreatedJob`, `ActivityLogAction`
+- `DealObserver` → fires on `Deal` create/update → dispatches `SyncDealJob`, `StatusChangedJob`
+- `DealForm.vue` → uses `Deal` TypeScript type, `useForm()`, `StatusBadge` component
+
+## Risks & Considerations
+1. **{Risk}**: {Detailed description of the risk, what could go wrong, and suggested mitigation}
+2. **{Risk}**: ...
+3. **Observer cascades**: {Which observers fire and what chain reactions to expect}
+4. **Migration safety**: {Any data migration concerns, column renames, NOT NULL additions to existing data}
+5. **Breaking changes**: {What existing functionality could break}
+
+## Open Questions for Clarification
+List anything ambiguous or unclear that the question-generation step should address:
+1. {Question about scope or approach}
+2. {Question about edge case handling}
+3. {Question about existing behavior that's unclear}
+```
+
+## CRITICAL REMINDERS
+- Be EXHAUSTIVE. If a downstream agent needs to create a new Action, they need to see an existing Action's FULL code to match the pattern. If they need to add a route, they need to see the existing route group structure.
+- Include ACTUAL CODE SNIPPETS, not just descriptions. "Has a belongsTo relationship" is useless — show the actual `public function owner(): BelongsTo` definition.
+- The research.md file should be LONG (200-500+ lines). Short research = bad plans = broken implementation.
+- Every model mentioned must include its relationships, casts, and observers.
+- Every action/query must include its full method signature with parameter types and return type.
+- Every route must include the HTTP method, URI, controller method, and middleware.
+- Every test must include the test method name and a brief description of what it asserts.
+- Pattern examples are NOT optional — they are the #1 thing implementation agents need.
 ```
 
 4. **IMPORTANT — Context hygiene**: When the agent returns, you receive ONLY its short summary. Do NOT use the Read tool to read `research.md`. Do NOT ask the agent to elaborate. The research stays out of the orchestrator's context. Update `task.json`: set `steps.research.state = "completed"`, `finished_at` to current ISO timestamp.
